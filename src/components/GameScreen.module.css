@@ -240,6 +240,10 @@
   }
 }
 
+.cardMascot {
+  display: none;
+}
+
 .cardHead {
   display: flex;
   justify-content: space-between;
@@ -512,6 +516,20 @@
 
 /* ---- さらに短い画面（iPhone SE のアプリ内ブラウザなど） ---- */
 @media (max-height: 620px) {
+  /* ドパモルの場所をなくして、カードの中に小さく出す */
+  .stage {
+    display: none !important;
+  }
+  .cardMascot {
+    display: block;
+    position: absolute;
+    left: 8px;
+    bottom: 6px;
+    z-index: 1;
+  }
+  .comboRow {
+    top: auto;
+  }
   .dots li {
     width: 11px;
     height: 11px;

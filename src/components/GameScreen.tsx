@@ -336,6 +336,10 @@ export function GameScreen(props: Props) {
 
       {/* ---- 筆算 ---- */}
       <section key={state.questionNumber} ref={cardRef} className={styles.card} aria-live="polite">
+        {/* とても短い画面では、ドパモルはカードの中（左下）に小さく出る */}
+        <div className={styles.cardMascot} aria-hidden="true">
+          <Dopamoru expression={mascot.expression} motion={mascot.motion} motionKey={mascot.key} size={58} />
+        </div>
         <div className={styles.cardHead}>
           <span className={styles.kind}>{problem.op === '+' ? 'たしざん' : 'ひきざん'}</span>
           <span className={styles.number}>第{state.questionNumber}問</span>

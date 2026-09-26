@@ -10,33 +10,41 @@
 }
 
 .key {
-  min-height: 50px;
-  height: clamp(50px, 7dvh, 66px);
+  min-height: 44px;
+  /* 画面の高さに合わせて伸び縮み */
+  height: clamp(44px, 7dvh, 66px);
   font-family: var(--font-display);
   font-size: 1.9rem;
   background: var(--paper);
   touch-action: manipulation;
 }
 
+/* 0 はスマホと同じく、いちばん下のまん中 */
 .zero {
-  grid-column: span 3;
+  grid-column: 2;
 }
 
-/* 縦が短い画面では 5 × 2 の2段にする（1 2 3 4 5 / 6 7 8 9 0） */
+/* 縦が短い画面では少しつめる */
 @media (max-height: 820px) {
   .pad {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+    gap: 7px;
+    padding: 8px 12px max(10px, env(safe-area-inset-bottom));
   }
   .key {
-    order: var(--order);
-    min-height: 50px;
-    height: clamp(50px, 8dvh, 62px);
+    height: clamp(44px, 6.4dvh, 58px);
     font-size: 1.7rem;
   }
-  .zero {
-    grid-column: auto;
+}
+
+@media (max-height: 620px) {
+  .pad {
+    gap: 5px;
+    padding: 6px 12px max(8px, env(safe-area-inset-bottom));
+  }
+  .key {
+    min-height: 40px;
+    height: 40px;
+    font-size: 1.5rem;
   }
 }
 
@@ -50,12 +58,4 @@
 
 .fever .key:nth-child(3n + 2) {
   background: linear-gradient(180deg, #fff, #dff7ff);
-}
-
-@media (max-height: 620px) {
-  .key {
-    min-height: 46px;
-    height: 46px;
-    font-size: 1.5rem;
-  }
 }
