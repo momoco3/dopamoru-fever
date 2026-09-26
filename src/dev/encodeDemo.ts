@@ -2,7 +2,7 @@
 // record.html から呼ばれるだけで、公開されるアプリには含まれません。
 // 映像は WebCodecs（H.264）、音はゲームと同じ合成処理をオフラインで鳴らして AAC にし、mp4-muxer でまとめます。
 import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
-import { createMaster, renderBgm, renderSound, type BgmPattern, type SoundName, type SoundOptions } from '../lib/sound';
+import { createMaster, loadBgmTracks, renderSound, startBgmVoice, stopBgmVoice, type BgmPattern, type SoundName, type SoundOptions } from '../lib/sound';
 
 type SoundLogEntry =
   | { kind: 'sfx'; time: number; name: SoundName; options: SoundOptions }
@@ -29,21 +29,30 @@ export async function encodeDemo({ frames, sounds, fps, tailSeconds = 0.5 }: Enc
   // ---- 音をオフラインで合成 ----
   const offline = new OfflineAudioContext(2, Math.ceil(SAMPLE_RATE * duration), SAMPLE_RATE);
   const master = createMaster(offline, offline.destination);
-  let bgm: { pattern: BgmPattern; start: number } | null = null;
-  const closeBgm = (end: number) => {
-    if (bgm) renderBgm(offline, master, bgm.pattern, bgm.start, bgm.start, Math.min(end, duration));
-    bgm = null;
-  };
+  // BGM もゲームと同じ曲・同じ切り替え方で鳴らす
+  const loaded = await loadBgmTracks(offline, window.location.href);
+  let playing = null as { pattern: BgmPattern; voice: ReturnType<typeof startBgmVoice> } | null;
+  let epoch = 0;
   for (const entry of sounds) {
     const t = (entry.time - t0) / 1000;
-    if (t < 0 || t > duration) continue;
-    if (entry.kind === 'sfx') renderSound(offline, master, t, entry.name, entry.options);
-    else {
-      closeBgm(t);
-      if (entry.pattern) bgm = { pattern: entry.pattern, start: t + 0.05 };
+    if (t > duration) continue;
+    if (entry.kind === 'sfx') {
+      if (t >= 0) renderSound(offline, master, t, entry.name, entry.options);
+      continue;
     }
+    const at = Math.max(0, t);
+    if (!entry.pattern) {
+      if (playing) stopBgmVoice(playing.voice, at);
+      playing = null;
+      continue;
+    }
+    if (playing?.pattern === entry.pattern) continue;
+    if (!playing) epoch = at;
+    const voice = startBgmVoice(offline, master, loaded, entry.pattern, at, at - epoch);
+    if (playing) stopBgmVoice(playing.voice, at);
+    playing = { pattern: entry.pattern, voice };
   }
-  closeBgm(duration);
+  if (playing) stopBgmVoice(playing.voice, Math.max(0, duration - 0.4));
   const audio = await offline.startRendering();
 
   // ---- MP4 の準備 ----

@@ -2,10 +2,12 @@
 <html lang="ja">
   <head><meta charset="UTF-8" /><title>demo encoder</title></head>
   <body>
-    <p>デモ動画のエンコード用ページ（開発時のみ使用。公開版には含まれません）</p>
+    <p>デモ動画・BGM のエンコード用ページ（開発時のみ使用。公開版には含まれません）</p>
     <script type="module">
       import { encodeDemo } from '/src/dev/encodeDemo.ts';
+      import { encodeAac } from '/src/dev/encodeAac.ts';
       window.encodeDemo = encodeDemo;
+      window.encodeAac = encodeAac;
       window.encoderReady = true;
     </script>
   </body>

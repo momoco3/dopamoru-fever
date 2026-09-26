@@ -39,14 +39,15 @@
 | 0 | 0 | 星がはじける |
 | 1〜2 | 1 | 紙吹雪 |
 | 3〜4 | 2 | 「チャンス到来!!」、画面が揺れる、コインの噴水 |
-| 5〜7 | 3 | カットイン「モルモルチャンス!!」、背景に光線、コインの雨、BGM が速くなる |
+| 5〜7 | 3 | カットイン「モルモルチャンス!!」、背景に光線、コインの雨、BGM が明るい版に切り替わる |
 | 8〜 | 4 | カットイン「激アツ確定!!」、虹色の光線、虹色の文字 |
-| フィーバー | 5 | 全部盛り。ミニドパモルが降ってくる、倍率が桁違い |
+| フィーバー | 5 | 全部盛り。ミニドパモルが降ってくる、倍率が桁違い、BGM が「キメ」入りの版に |
 
 - ミスするとコンボが切れて段階が下がります
 - 画面全体のフラッシュは 0.5 秒に1回までに抑えています（光の点滅で気分が悪くならないように）
 - 「動きを弱める」をオンにすると、揺れ・フラッシュ・光線の回転を止め、パーティクルも減らします
-- 効果音と BGM はすべてプログラムで合成しています（音声ファイルなし）
+- 効果音はプログラムで合成、BGM はフリー音源（CC0）の EDM ループです（[音源](#音源) 参照）
+- アプリが裏に回ったとき（別のアプリやタブに切り替えたとき）は音が止まります
 
 ---
 
@@ -95,7 +96,8 @@ node scripts/record-demo.mjs
 | 問題の作り方（くり上がりの割合など） | `src/lib/problems.ts` |
 | 目標タイム | `src/lib/score.ts` の `TARGET_SECONDS_PER_QUESTION` |
 | フィーバーの秒数 | `src/components/GameScreen.tsx` の `FEVER_SECONDS` |
-| 効果音・BGM | `src/lib/sound.ts` |
+| 効果音 | `src/lib/sound.ts` の `renderSound` |
+| BGM の曲 | `public/bgm/` のファイルと、`src/lib/sound.ts` の `BGM_TRACKS`（下の「BGM を差し替える」参照） |
 | ドパモルの見た目・表情 | `src/lib/dopamoruArt.ts` |
 | 色 | `src/index.css` の `:root` |
 
@@ -106,7 +108,9 @@ dopamoru-fever/
 ├─ index.html / vite.config.ts / package.json
 ├─ public/        … アイコン、manifest（ホーム画面追加用）、sw.js（オフライン用）
 ├─ docs/          … README のスクリーンショット
+├─ public/bgm/   … BGM（AAC）
 ├─ scripts/record-demo.mjs … プレイ動画の自動撮影
+├─ scripts/convert-bgm.mjs … BGM を AAC に変換
 ├─ record.html    … 動画のエンコード用ページ（開発時のみ）
 └─ src/
    ├─ App.tsx                … 画面の流れ（タイトル → テスト → 結果 → フィーバー）
@@ -122,7 +126,7 @@ dopamoru-fever/
    ├─ lib/
    │  ├─ problems.ts         … 問題づくり
    │  ├─ score.ts            … ドパの計算と「万・億・兆…」表示
-   │  ├─ sound.ts            … 効果音・BGM の合成
+   │  ├─ sound.ts            … 効果音の合成と BGM の再生
    │  ├─ effects.ts          … 演出の呼び出し口
    │  ├─ dopamoruArt.ts      … ドパモルの絵（SVG）
    │  ├─ storage.ts          … 記録と設定の保存（端末内）
@@ -151,7 +155,29 @@ dopamoru-fever/
 | @types/react / @types/react-dom / @types/node | 型定義 | MIT |
 | oxlint | コードチェック | MIT |
 
-GPL 系のライブラリは使っていません。キャラクター「ドパモル」・効果音・BGM はこのリポジトリのオリジナルです。
+GPL 系のライブラリは使っていません。キャラクター「ドパモル」と効果音はこのリポジトリのオリジナルです。
+
+## 音源
+
+| 曲 | 作者 | ライセンス | 使っている場面 |
+| --- | --- | --- | --- |
+| [Melodic EDM Loops](https://opengameart.org/content/melodic-edm-loops) | Fupi | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)（パブリックドメイン） | `melodicedm` → ふつう（`public/bgm/game.m4a`）<br>`brightmelodicedm` → コンボ5以上（`hot.m4a`）<br>`brightmelodicskippyedm` → フィーバー（`fever.m4a`） |
+
+iPhone でも確実に鳴るよう、元の WAV を AAC（.m4a）に変換しています（内容は変えていません）。
+CC0 なのでクレジット表記は不要ですが、すてきな曲をありがとうございます。
+
+### BGM を差し替える
+
+1. ループする曲（WAV など）を用意する（**再配布してよいライセンス**のものにしてください）
+2. `npm run dev` を起動した状態で変換する
+
+   ```bash
+   node scripts/convert-bgm.mjs 曲.wav game
+   ```
+
+   出力名は `game`（ふつう）/ `hot`（コンボ5以上）/ `fever`（フィーバー）のどれか
+3. `src/lib/sound.ts` の `BGM_TRACKS` の `seconds` を、その曲の1ループの長さ（秒）に変える
+4. README の「音源」の表を書きかえる
 
 ## プライバシー
 

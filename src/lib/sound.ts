@@ -43,6 +43,8 @@ export function unlockAudio() {
     master = createMaster(context, context.destination);
   }
   if (context.state === 'suspended') void context.resume();
+  ensureBgmLoaded();
+  applyBgm();
 }
 
 export function setMuted(value: boolean) {
@@ -242,71 +244,123 @@ export function renderSound(ctx: BaseAudioContext, dest: AudioNode, t: number, n
 }
 
 // ---------- BGM ----------
+// フリー音源（CC0）の EDM ループを使っています。曲の情報は README を見てください。
+// ふつう → コンボが続くと明るい版 → フィーバーは「キメ」入りの版、と段階で切り替えます。
 
-const BGM_TEMPO: Record<BgmPattern, number> = { game: 120, hot: 140, fever: 168 };
-const BASS_LINE = [-9, -9, -12, -12, -16, -16, -14, -14]; // A → F# → D → E あたり（2拍ずつ）
+type BgmTrack = { url: string; seconds: number };
 
-/** BGM の t0〜t1 の範囲の音を並べる。startTime は BGM を始めた時刻 */
-export function renderBgm(ctx: BaseAudioContext, dest: AudioNode, pattern: BgmPattern, startTime: number, t0: number, t1: number) {
-  const beat = 60 / BGM_TEMPO[pattern];
-  const sixteenth = beat / 4;
-  const first = Math.max(0, Math.ceil((t0 - startTime) / sixteenth));
-  const last = Math.floor((t1 - startTime) / sixteenth);
-  for (let i = first; i <= last; i++) {
-    const t = startTime + i * sixteenth;
-    if (t < t0 || t >= t1) continue;
-    const beatIndex = Math.floor(i / 4);
-    const inBeat = i % 4;
-    const bass = BASS_LINE[Math.floor(beatIndex / 2) % BASS_LINE.length];
+/** BGM の曲。差し替えるときは public/bgm/ のファイルと、ここの秒数（ループの長さ）を変える */
+export const BGM_TRACKS: Record<BgmPattern, BgmTrack> = {
+  game: { url: 'bgm/game.m4a', seconds: 303188 / 44100 },
+  hot: { url: 'bgm/hot.m4a', seconds: 303188 / 44100 },
+  fever: { url: 'bgm/fever.m4a', seconds: 605588 / 44100 },
+};
+const BGM_VOLUME = 0.32;
+const CROSSFADE_SECONDS = 0.3;
 
-    if (pattern === 'game') {
-      if (inBeat === 0) tone(ctx, dest, t, { freq: note(bass - 12), type: 'triangle', duration: beat * 0.9, gain: 0.1 });
-      if (inBeat === 2) noise(ctx, dest, t, { duration: 0.04, gain: 0.03, freq: 8000 });
-    } else if (pattern === 'hot') {
-      if (inBeat === 0) kick(ctx, dest, t, 0.35);
-      if (inBeat % 2 === 0) tone(ctx, dest, t, { freq: note(bass - 12), type: 'square', duration: sixteenth * 1.6, gain: 0.05 });
-      noise(ctx, dest, t, { duration: 0.03, gain: inBeat === 2 ? 0.05 : 0.025, freq: 9000 });
-    } else {
-      if (inBeat === 0) kick(ctx, dest, t, 0.45);
-      tone(ctx, dest, t, { freq: note(bass - 12 + (inBeat % 2 ? 12 : 0)), type: 'square', duration: sixteenth * 0.9, gain: 0.05 });
-      noise(ctx, dest, t, { duration: 0.03, gain: 0.035, freq: 9000 });
-      // きらきらしたアルペジオ
-      const arp = [0, 4, 7, 12][i % 4];
-      tone(ctx, dest, t, { freq: note(bass + 24 + arp), type: 'triangle', duration: sixteenth * 0.9, gain: 0.035 });
-      if (beatIndex % 2 === 1 && inBeat === 0) noise(ctx, dest, t, { duration: 0.12, gain: 0.1, filter: 'bandpass', freq: 1800 });
-    }
-  }
+export type LoadedBgm = Record<BgmPattern, { buffer: AudioBuffer; loopStart: number; loopEnd: number }>;
+
+/** BGM を読み込む。AAC は頭に短い無音が入ることがあるので、音が始まる位置を探してループ位置を合わせる */
+export async function loadBgmTracks(ctx: BaseAudioContext, baseUrl: string = document.baseURI): Promise<LoadedBgm> {
+  const entries = await Promise.all(
+    (Object.keys(BGM_TRACKS) as BgmPattern[]).map(async (pattern) => {
+      const track = BGM_TRACKS[pattern];
+      const data = await (await fetch(new URL(track.url, baseUrl))).arrayBuffer();
+      const buffer = await ctx.decodeAudioData(data);
+      const loopStart = findFirstSound(buffer);
+      const loopEnd = Math.min(buffer.duration, loopStart + track.seconds);
+      return [pattern, { buffer, loopStart, loopEnd }] as const;
+    }),
+  );
+  return Object.fromEntries(entries) as LoadedBgm;
 }
 
-let bgm: { pattern: BgmPattern; startTime: number; scheduledUntil: number; timer: number } | null = null;
+function findFirstSound(buffer: AudioBuffer): number {
+  const limit = Math.min(buffer.length, Math.round(buffer.sampleRate * 0.25));
+  const channels = Array.from({ length: buffer.numberOfChannels }, (_, i) => buffer.getChannelData(i));
+  for (let i = 0; i < limit; i++) {
+    if (channels.some((c) => Math.abs(c[i]) > 0.004)) return i / buffer.sampleRate;
+  }
+  return 0;
+}
+
+type BgmVoice = { source: AudioBufferSourceNode; gain: GainNode };
+
+/** BGM を1本鳴らし始める。offset はループの中のどこから始めるか（秒） */
+export function startBgmVoice(ctx: BaseAudioContext, dest: AudioNode, loaded: LoadedBgm, pattern: BgmPattern, when: number, offset: number): BgmVoice {
+  const track = loaded[pattern];
+  const length = track.loopEnd - track.loopStart;
+  const source = ctx.createBufferSource();
+  source.buffer = track.buffer;
+  source.loop = true;
+  source.loopStart = track.loopStart;
+  source.loopEnd = track.loopEnd;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, when);
+  gain.gain.exponentialRampToValueAtTime(BGM_VOLUME, when + CROSSFADE_SECONDS);
+  source.connect(gain).connect(dest);
+  source.start(when, track.loopStart + (((offset % length) + length) % length));
+  return { source, gain };
+}
+
+export function stopBgmVoice(voice: BgmVoice, when: number) {
+  voice.gain.gain.cancelScheduledValues(when);
+  voice.gain.gain.setValueAtTime(BGM_VOLUME, when);
+  voice.gain.gain.exponentialRampToValueAtTime(0.0001, when + CROSSFADE_SECONDS);
+  voice.source.stop(when + CROSSFADE_SECONDS + 0.05);
+}
+
+let loadedBgm: LoadedBgm | null = null;
+let loadingBgm = false;
+let wantedBgm: BgmPattern | null = null;
+let playing: { pattern: BgmPattern; voice: BgmVoice } | null = null;
+/** 曲を切り替えても拍がずれないよう、最初に鳴らし始めた時刻を基準にする */
+let bgmEpoch = 0;
+
+function ensureBgmLoaded() {
+  if (loadedBgm || loadingBgm || !context) return;
+  loadingBgm = true;
+  loadBgmTracks(context)
+    .then((loaded) => {
+      loadedBgm = loaded;
+      applyBgm();
+    })
+    .catch(() => {
+      // 読み込めなかったときは BGM なしで遊べるようにする
+    });
+}
+
+function applyBgm() {
+  if (!context || !master || !loadedBgm) return;
+  if (playing?.pattern === wantedBgm) return;
+  const now = context.currentTime + 0.02;
+  if (!wantedBgm) {
+    if (playing) stopBgmVoice(playing.voice, now);
+    playing = null;
+    return;
+  }
+  if (!playing) bgmEpoch = now;
+  const voice = startBgmVoice(context, master, loadedBgm, wantedBgm, now, now - bgmEpoch);
+  if (playing) stopBgmVoice(playing.voice, now);
+  playing = { pattern: wantedBgm, voice };
+}
 
 /** BGM を切り替える（null で停止） */
 export function setBgm(pattern: BgmPattern | null) {
-  if (bgm?.pattern === pattern) return;
+  if (wantedBgm === pattern) return;
   window.__soundLog?.push({ kind: 'bgm', time: epochNow(), pattern });
-  if (bgm) {
-    clearInterval(bgm.timer);
-    bgm = null;
-  }
-  if (!pattern || !context || !master) return;
-  const ctx = context;
-  const dest = master;
-  const startTime = ctx.currentTime + 0.05;
-  const state = { pattern, startTime, scheduledUntil: startTime, timer: 0 };
-  const schedule = () => {
-    if (muted) {
-      state.scheduledUntil = ctx.currentTime + 0.3;
-      return;
-    }
-    const until = ctx.currentTime + 0.3;
-    if (until > state.scheduledUntil) {
-      renderBgm(ctx, dest, pattern, startTime, state.scheduledUntil, until);
-      state.scheduledUntil = until;
-    }
-  };
-  schedule();
-  state.timer = window.setInterval(schedule, 100);
-  bgm = state;
+  wantedBgm = pattern;
+  ensureBgmLoaded();
+  applyBgm();
+}
+
+// アプリが裏に回ったら音を止め、戻ってきたら再開する
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (!context) return;
+    if (document.hidden) void context.suspend();
+    else void context.resume();
+  });
 }
 
 function epochNow() {
