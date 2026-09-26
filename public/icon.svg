@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 175">
+  <defs>
+    <clipPath id="dg-body"><path d="M18 108 C14 58 58 30 100 30 C142 30 186 58 182 108 C180 146 146 164 100 164 C54 164 20 146 18 108 Z"/></clipPath>
+  </defs>
+  <!-- 耳 -->
+  <ellipse cx="46" cy="46" rx="18" ry="14" fill="#ffa54a" stroke="#2b2140" stroke-width="5"/>
+  <ellipse cx="47" cy="47" rx="9" ry="6.5" fill="#ff8fb8"/>
+  <ellipse cx="154" cy="46" rx="18" ry="14" fill="#8a5a3c" stroke="#2b2140" stroke-width="5"/>
+  <ellipse cx="153" cy="47" rx="9" ry="6.5" fill="#ff8fb8"/>
+  <!-- 足 -->
+  <ellipse cx="66" cy="164" rx="16" ry="9" fill="#ff8fb8" stroke="#2b2140" stroke-width="4.5"/>
+  <ellipse cx="134" cy="164" rx="16" ry="9" fill="#ff8fb8" stroke="#2b2140" stroke-width="4.5"/>
+  <!-- 体とぶち模様 -->
+  <g clip-path="url(#dg-body)">
+    <rect x="0" y="0" width="200" height="175" fill="#fff6ea"/>
+    <ellipse cx="44" cy="62" rx="58" ry="44" fill="#ffa54a"/>
+    <ellipse cx="160" cy="58" rx="44" ry="36" fill="#8a5a3c"/>
+    <ellipse cx="150" cy="150" rx="40" ry="22" fill="#ffa54a" opacity="0.9"/>
+    <ellipse cx="100" cy="36" rx="18" ry="12" fill="#fff6ea"/>
+  </g>
+  <path d="M18 108 C14 58 58 30 100 30 C142 30 186 58 182 108 C180 146 146 164 100 164 C54 164 20 146 18 108 Z" fill="none" stroke="#2b2140" stroke-width="5.5"/>
+  <!-- ほっぺ -->
+  <ellipse cx="54" cy="116" rx="14" ry="9" fill="rgba(255,110,160,0.55)"/>
+  <ellipse cx="146" cy="116" rx="14" ry="9" fill="rgba(255,110,160,0.55)"/>
+  <path d="M60 96 Q72 82 84 96" fill="none" stroke="#2b2140" stroke-width="6" stroke-linecap="round"/>
+              <path d="M116 96 Q128 82 140 96" fill="none" stroke="#2b2140" stroke-width="6" stroke-linecap="round"/>
+  <!-- 鼻と口 -->
+  <path d="M94 105 L106 105 L100 112 Z" fill="#ff8fb8" stroke="#2b2140" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M88 113 Q94 124 100 115 Q106 124 112 113" fill="#ff9fb3" stroke="#2b2140" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- ひげ -->
+  <path d="M40 104 L22 100 M40 110 L22 113 M160 104 L178 100 M160 110 L178 113" stroke="#2b2140" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

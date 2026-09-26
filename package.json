@@ -1,0 +1,29 @@
+{
+  "name": "dopamoru-fever",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A super flashy arithmetic drill for kids. Column addition & subtraction with pachinko-style rewards.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/dela-gothic-one": "^5.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "mp4-muxer": "^5.2.2",
+    "oxlint": "^1.85.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.1"
+  }
+}

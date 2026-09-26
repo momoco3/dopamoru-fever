@@ -1,0 +1,448 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ---- 上の情報 ---- */
+.hud {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: max(10px, env(safe-area-inset-top)) 14px 0;
+}
+
+.hudRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 45%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dots li {
+  width: 13px;
+  height: 13px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+}
+
+.dots .dotDone {
+  background: var(--blue);
+}
+
+.dots .dotNow {
+  background: var(--yellow);
+  animation: dot-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+.feverTag {
+  padding: 2px 12px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--paper);
+  background: linear-gradient(90deg, #ff5fa2, #8b6bff);
+  border: var(--line);
+  border-radius: 999px;
+  animation: fever-tag 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes fever-tag {
+  to {
+    transform: rotate(-4deg) scale(1.08);
+  }
+}
+
+.timer {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 12px;
+  background: var(--paper);
+  border: var(--line);
+  border-radius: 999px;
+}
+
+.timerLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-soft);
+}
+
+.timer strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.timerOver {
+  color: #d23a6a;
+}
+
+.timerDanger {
+  color: #e0304f;
+  animation: dot-pulse 0.5s ease-in-out infinite;
+}
+
+.quit {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  font-weight: 900;
+  background: var(--paper);
+  border: var(--line);
+  border-radius: 50%;
+}
+
+.pills {
+  display: flex;
+  gap: 6px;
+}
+
+.pill {
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+}
+
+.pill b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 0.95rem;
+  color: var(--blue);
+}
+
+.pillMiss b {
+  color: #e0304f;
+}
+
+.comboRow {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 30px;
+}
+
+.combo {
+  padding: 2px 12px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--paper);
+  background: var(--pink);
+  border: var(--line);
+  border-radius: 10px;
+  transform: rotate(-3deg);
+  animation: combo-pop 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.combo small {
+  font-size: 0.75rem;
+  color: var(--yellow);
+}
+
+@keyframes combo-pop {
+  0% {
+    transform: rotate(-3deg) scale(0.3);
+  }
+  100% {
+    transform: rotate(-3deg) scale(1);
+  }
+}
+
+/* ---- ドパモル ---- */
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+  min-height: 110px;
+  max-height: 190px;
+  padding-top: 26px;
+}
+
+.bubble {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: 8% 0;
+  max-width: 62%;
+  padding: 5px 12px;
+  font-weight: 900;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+}
+
+.shelf {
+  width: 86%;
+  height: 8px;
+  margin-top: -4px;
+  background: var(--ink);
+  border-radius: 999px;
+  opacity: 0.85;
+}
+
+/* ---- 筆算のカード ---- */
+.card {
+  position: relative;
+  margin: 10px 14px 12px;
+  padding: 10px 14px 12px;
+  background: var(--paper);
+  border: var(--line);
+  border-radius: 22px;
+  box-shadow: 0 6px 0 var(--ink);
+  animation: card-in 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes card-in {
+  0% {
+    transform: translateY(20px) scale(0.92);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kind {
+  padding: 2px 12px;
+  font-weight: 900;
+  font-size: 0.8rem;
+  color: var(--paper);
+  background: var(--blue);
+  border-radius: 999px;
+}
+
+.number {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 44px repeat(3, 58px);
+  justify-items: center;
+  align-items: center;
+}
+
+.digit {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  line-height: 1.08;
+}
+
+.struck {
+  position: relative;
+  color: #9a93ad;
+}
+
+.struck::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 50%;
+  height: 4px;
+  background: var(--pink);
+  transform: rotate(-30deg);
+  border-radius: 2px;
+}
+
+.op {
+  font-family: var(--font-display);
+  font-size: 2.3rem;
+  color: var(--pink);
+}
+
+.memo {
+  height: 24px;
+}
+
+.memoPop {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--pink);
+  animation: memo-pop 0.4s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+@keyframes memo-pop {
+  0% {
+    transform: scale(0) translateY(10px);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.line {
+  width: calc(44px + 3 * 58px);
+  height: 5px;
+  margin: 2px 0 6px;
+  background: var(--ink);
+  border-radius: 3px;
+}
+
+.box {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 58px;
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  background: #eef3ff;
+  border: 3px dashed #aab4d8;
+  border-radius: 12px;
+}
+
+.boxActive {
+  background: #fffbe0;
+  border: 3.5px solid var(--pink);
+  animation: box-blink 0.9s ease-in-out infinite;
+}
+
+@keyframes box-blink {
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 95, 162, 0.3);
+  }
+}
+
+.boxDone {
+  color: var(--ink);
+  background: #dff7e6;
+  border: 3px solid var(--ink);
+  animation: box-done 0.3s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+@keyframes box-done {
+  0% {
+    transform: scale(1.4) rotate(-8deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.boxWrong {
+  background: #ffe0e8;
+  border-color: #e0304f;
+  animation: none;
+}
+
+.placeName {
+  height: 18px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--pink);
+}
+
+.equation {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  margin: 0;
+  text-align: center;
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: var(--blue);
+}
+
+/* ---- 段階ごとの見た目 ---- */
+.level3 .card,
+.level4 .card {
+  box-shadow:
+    0 6px 0 var(--ink),
+    0 0 0 6px var(--yellow);
+}
+
+.level4 .card {
+  animation:
+    card-in 0.35s cubic-bezier(0.3, 1.5, 0.5, 1),
+    card-glow 1.2s linear infinite;
+}
+
+@keyframes card-glow {
+  0% {
+    box-shadow:
+      0 6px 0 var(--ink),
+      0 0 0 6px #ff9ecb;
+  }
+  33% {
+    box-shadow:
+      0 6px 0 var(--ink),
+      0 0 0 6px #ffe45e;
+  }
+  66% {
+    box-shadow:
+      0 6px 0 var(--ink),
+      0 0 0 6px #9fe6ff;
+  }
+  100% {
+    box-shadow:
+      0 6px 0 var(--ink),
+      0 0 0 6px #ff9ecb;
+  }
+}
+
+.fever .card {
+  background: linear-gradient(180deg, #fff, #fff0f7);
+  animation:
+    card-in 0.25s cubic-bezier(0.3, 1.5, 0.5, 1),
+    card-glow 0.8s linear infinite;
+}
+
+@media (max-height: 700px) {
+  .stage {
+    min-height: 80px;
+    max-height: 110px;
+  }
+  .digit {
+    font-size: 2.2rem;
+  }
+  .box {
+    height: 50px;
+  }
+}

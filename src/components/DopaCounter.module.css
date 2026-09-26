@@ -1,0 +1,55 @@
+.counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  max-width: 62%;
+  padding: 4px 14px 6px;
+  background: var(--yellow);
+  border: var(--line);
+  border-radius: 14px;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.label {
+  flex: none;
+  font-weight: 900;
+  font-size: 0.8rem;
+}
+
+.value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.45rem;
+  line-height: 1.1;
+  animation: bump 0.25s ease-out;
+}
+
+.hot {
+  background: linear-gradient(180deg, #ffe45e, #ffb02e);
+}
+
+.rainbow {
+  background: linear-gradient(90deg, #ff9ecb, #ffe45e, #9df5b0, #9fe6ff, #c3b3ff, #ff9ecb);
+  background-size: 300% 100%;
+  animation: slide 2s linear infinite;
+}
+
+@keyframes slide {
+  to {
+    background-position: 300% 0;
+  }
+}
+
+@keyframes bump {
+  0% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

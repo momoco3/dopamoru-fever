@@ -1,0 +1,33 @@
+.pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 12px 14px max(14px, env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.55);
+  border-top: var(--line);
+}
+
+.key {
+  min-height: 58px;
+  height: clamp(52px, 8.4vh, 72px);
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  background: var(--paper);
+  touch-action: manipulation;
+}
+
+.zero {
+  grid-column: span 3;
+}
+
+.fever .key {
+  background: linear-gradient(180deg, #fff, #ffe6f2);
+}
+
+.fever .key:nth-child(3n + 1) {
+  background: linear-gradient(180deg, #fff, #fff4c2);
+}
+
+.fever .key:nth-child(3n + 2) {
+  background: linear-gradient(180deg, #fff, #dff7ff);
+}
