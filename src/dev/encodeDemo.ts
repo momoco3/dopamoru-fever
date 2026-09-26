@@ -2,7 +2,7 @@
 // record.html から呼ばれるだけで、公開されるアプリには含まれません。
 // 映像は WebCodecs（H.264）、音はゲームと同じ合成処理をオフラインで鳴らして AAC にし、mp4-muxer でまとめます。
 import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
-import { createMaster, loadBgmTracks, renderSound, startBgmVoice, stopBgmVoice, type BgmPattern, type SoundName, type SoundOptions } from '../lib/sound';
+import { createMaster, loadBgmTracks, nextBgmStart, renderSound, startBgmVoice, stopBgmVoice, type BgmPattern, type SoundName, type SoundOptions } from '../lib/sound';
 
 type SoundLogEntry =
   | { kind: 'sfx'; time: number; name: SoundName; options: SoundOptions }
@@ -47,8 +47,9 @@ export async function encodeDemo({ frames, sounds, fps, tailSeconds = 0.5 }: Enc
       continue;
     }
     if (playing?.pattern === entry.pattern) continue;
-    if (!playing) epoch = at;
-    const voice = startBgmVoice(offline, master, loaded, entry.pattern, at, at - epoch);
+    const start = nextBgmStart(playing?.pattern ?? null, entry.pattern, at, epoch);
+    epoch = start.epoch;
+    const voice = startBgmVoice(offline, master, loaded, entry.pattern, at, start.offset);
     if (playing) stopBgmVoice(playing.voice, at);
     playing = { pattern: entry.pattern, voice };
   }

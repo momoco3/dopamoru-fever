@@ -46,7 +46,7 @@
 - ミスするとコンボが切れて段階が下がります
 - 画面全体のフラッシュは 0.5 秒に1回までに抑えています（光の点滅で気分が悪くならないように）
 - 「動きを弱める」をオンにすると、揺れ・フラッシュ・光線の回転を止め、パーティクルも減らします
-- 効果音はプログラムで合成、BGM はフリー音源（CC0）の EDM ループです（[音源](#音源) 参照）
+- 効果音はプログラムで合成。BGM はフリー音源（CC0）で、タイトル・結果画面はチップチューン、ゲーム中は EDM です（[音源](#音源) 参照）
 - アプリが裏に回ったとき（別のアプリやタブに切り替えたとき）は音が止まります
 
 ---
@@ -161,10 +161,12 @@ GPL 系のライブラリは使っていません。キャラクター「ドパ�
 
 | 曲 | 作者 | ライセンス | 使っている場面 |
 | --- | --- | --- | --- |
-| [Melodic EDM Loops](https://opengameart.org/content/melodic-edm-loops) | Fupi | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)（パブリックドメイン） | `melodicedm` → ふつう（`public/bgm/game.m4a`）<br>`brightmelodicedm` → コンボ5以上（`hot.m4a`）<br>`brightmelodicskippyedm` → フィーバー（`fever.m4a`） |
+| [Summer Sunday](https://opengameart.org/content/summer-sunday) | celestialghost8 | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)（パブリックドメイン） | タイトル・結果画面（`public/bgm/menu.m4a`） |
+| [Melodic EDM Loops](https://opengameart.org/content/melodic-edm-loops) | Fupi | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)（パブリックドメイン） | `melodicedm` → ゲーム中（`public/bgm/game.m4a`）<br>`brightmelodicedm` → コンボ5以上（`hot.m4a`）<br>`brightmelodicskippyedm` → フィーバー（`fever.m4a`） |
 
 iPhone でも確実に鳴るよう、元の WAV を AAC（.m4a）に変換しています（内容は変えていません）。
 CC0 なのでクレジット表記は不要ですが、すてきな曲をありがとうございます。
+EDM どうしは拍をそろえてつなぎ、メニュー曲に切り替わるときは頭から流します。
 
 ### BGM を差し替える
 
@@ -175,8 +177,8 @@ CC0 なのでクレジット表記は不要ですが、すてきな曲をあり�
    node scripts/convert-bgm.mjs 曲.wav game
    ```
 
-   出力名は `game`（ふつう）/ `hot`（コンボ5以上）/ `fever`（フィーバー）のどれか
-3. `src/lib/sound.ts` の `BGM_TRACKS` の `seconds` を、その曲の1ループの長さ（秒）に変える
+   出力名は `menu`（タイトル・結果）/ `game`（ゲーム中）/ `hot`（コンボ5以上）/ `fever`（フィーバー）のどれか
+3. `src/lib/sound.ts` の `BGM_TRACKS` の `seconds` を、その曲の1ループの長さ（秒）に変える（音量は `volume` で調整）
 4. README の「音源」の表を書きかえる
 
 ## プライバシー

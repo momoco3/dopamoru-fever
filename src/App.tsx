@@ -5,12 +5,14 @@ import { GameScreen } from './components/GameScreen';
 import { ResultScreen } from './components/ResultScreen';
 import { TitleScreen } from './components/TitleScreen';
 import { startDemoBot } from './lib/demoBot';
-import { play, setBgm, setMuted, unlockAudio } from './lib/sound';
+import { play, setMuted, unlockAudio } from './lib/sound';
 import { loadPrefs, loadRecords, savePrefs, saveRecords, type Preferences, type Records } from './lib/storage';
 import type { FeverResult, GameConfig, GameResult, Screen } from './types';
 
 /** URL に ?demo を付けると自動でプレイする（プレイ動画の撮影用） */
 const DEMO = new URLSearchParams(window.location.search).has('demo');
+// 撮影用: 最初の画面（タイトル）の BGM から記録できるよう、いちばん最初に記録を始める
+if (DEMO) window.__soundLog = window.__soundLog ?? [];
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'title' });
@@ -86,10 +88,8 @@ export default function App() {
     setScreen({ name: 'feverResult', result, config: gameConfig });
   };
 
-  const toTitle = () => {
-    setBgm(null);
-    setScreen({ name: 'title' });
-  };
+  // タイトルに戻ると、タイトル画面がメニューの BGM に切り替える
+  const toTitle = () => setScreen({ name: 'title' });
 
   return (
     <>

@@ -1,6 +1,7 @@
 // タイトル画面。問題数と種類を選んで「はじめる」。
 import { formatDopa, formatTime } from '../lib/score';
-import { play } from '../lib/sound';
+import { useEffect } from 'react';
+import { play, setBgm } from '../lib/sound';
 import type { Preferences, Records } from '../lib/storage';
 import type { Operation, QuestionCount } from '../types';
 import { Dopamoru } from './Dopamoru';
@@ -21,6 +22,8 @@ const OPERATIONS: { value: Operation; label: string }[] = [
 ];
 
 export function TitleScreen({ prefs, records, onChangePrefs, onStart }: Props) {
+  // メニューの BGM（音は最初にタップしたときから鳴ります）
+  useEffect(() => setBgm('menu'), []);
   const bestTime = records.bestTime[String(prefs.count)];
   return (
     <main className={styles.screen}>

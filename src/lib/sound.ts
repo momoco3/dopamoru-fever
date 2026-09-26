@@ -17,7 +17,7 @@ export type SoundName =
   | 'tick';
 
 export type SoundOptions = { step?: number; level?: number };
-export type BgmPattern = 'game' | 'hot' | 'fever';
+export type BgmPattern = 'menu' | 'game' | 'hot' | 'fever';
 
 /** デモ動画用: 鳴らした音の記録（window.__soundLog があるときだけ記録） */
 type SoundLogEntry =
@@ -244,13 +244,22 @@ export function renderSound(ctx: BaseAudioContext, dest: AudioNode, t: number, n
 }
 
 // ---------- BGM ----------
-// フリー音源（CC0）の EDM ループを使っています。曲の情報は README を見てください。
-// ふつう → コンボが続くと明るい版 → フィーバーは「キメ」入りの版、と段階で切り替えます。
+// フリー音源（CC0）を使っています。曲の情報は README を見てください。
+// タイトル・結果画面はチップチューン、ゲーム中は EDM（ふつう → コンボが続くと明るい版 → フィーバーは「キメ」入りの版）。
 
-type BgmTrack = { url: string; seconds: number };
+type BgmTrack = {
+  url: string;
+  /** 1ループの長さ（秒） */
+  seconds: number;
+  /** 曲の頭の「間」（秒）。最初の音がループの頭より後ろにある曲だけ指定 */
+  leadIn?: number;
+  /** 曲ごとの音量の補正（1 = そのまま） */
+  volume?: number;
+};
 
 /** BGM の曲。差し替えるときは public/bgm/ のファイルと、ここの秒数（ループの長さ）を変える */
 export const BGM_TRACKS: Record<BgmPattern, BgmTrack> = {
+  menu: { url: 'bgm/menu.m4a', seconds: 2830338 / 44100, leadIn: 3693 / 44100, volume: 2.2 },
   game: { url: 'bgm/game.m4a', seconds: 303188 / 44100 },
   hot: { url: 'bgm/hot.m4a', seconds: 303188 / 44100 },
   fever: { url: 'bgm/fever.m4a', seconds: 605588 / 44100 },
@@ -267,7 +276,7 @@ export async function loadBgmTracks(ctx: BaseAudioContext, baseUrl: string = doc
       const track = BGM_TRACKS[pattern];
       const data = await (await fetch(new URL(track.url, baseUrl))).arrayBuffer();
       const buffer = await ctx.decodeAudioData(data);
-      const loopStart = findFirstSound(buffer);
+      const loopStart = Math.max(0, findFirstSound(buffer) - (track.leadIn ?? 0));
       const loopEnd = Math.min(buffer.duration, loopStart + track.seconds);
       return [pattern, { buffer, loopStart, loopEnd }] as const;
     }),
@@ -279,12 +288,12 @@ function findFirstSound(buffer: AudioBuffer): number {
   const limit = Math.min(buffer.length, Math.round(buffer.sampleRate * 0.25));
   const channels = Array.from({ length: buffer.numberOfChannels }, (_, i) => buffer.getChannelData(i));
   for (let i = 0; i < limit; i++) {
-    if (channels.some((c) => Math.abs(c[i]) > 0.004)) return i / buffer.sampleRate;
+    if (channels.some((c) => Math.abs(c[i]) > 0.012)) return i / buffer.sampleRate;
   }
   return 0;
 }
 
-type BgmVoice = { source: AudioBufferSourceNode; gain: GainNode };
+type BgmVoice = { source: AudioBufferSourceNode; gain: GainNode; level: number };
 
 /** BGM を1本鳴らし始める。offset はループの中のどこから始めるか（秒） */
 export function startBgmVoice(ctx: BaseAudioContext, dest: AudioNode, loaded: LoadedBgm, pattern: BgmPattern, when: number, offset: number): BgmVoice {
@@ -295,17 +304,18 @@ export function startBgmVoice(ctx: BaseAudioContext, dest: AudioNode, loaded: Lo
   source.loop = true;
   source.loopStart = track.loopStart;
   source.loopEnd = track.loopEnd;
+  const level = BGM_VOLUME * (BGM_TRACKS[pattern].volume ?? 1);
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.0001, when);
-  gain.gain.exponentialRampToValueAtTime(BGM_VOLUME, when + CROSSFADE_SECONDS);
+  gain.gain.exponentialRampToValueAtTime(level, when + CROSSFADE_SECONDS);
   source.connect(gain).connect(dest);
   source.start(when, track.loopStart + (((offset % length) + length) % length));
-  return { source, gain };
+  return { source, gain, level };
 }
 
 export function stopBgmVoice(voice: BgmVoice, when: number) {
   voice.gain.gain.cancelScheduledValues(when);
-  voice.gain.gain.setValueAtTime(BGM_VOLUME, when);
+  voice.gain.gain.setValueAtTime(voice.level, when);
   voice.gain.gain.exponentialRampToValueAtTime(0.0001, when + CROSSFADE_SECONDS);
   voice.source.stop(when + CROSSFADE_SECONDS + 0.05);
 }
@@ -316,6 +326,17 @@ let wantedBgm: BgmPattern | null = null;
 let playing: { pattern: BgmPattern; voice: BgmVoice } | null = null;
 /** 曲を切り替えても拍がずれないよう、最初に鳴らし始めた時刻を基準にする */
 let bgmEpoch = 0;
+
+/**
+ * 次の曲をループのどこから鳴らすか。
+ * ゲーム中の EDM どうしは拍をそろえてつなぎ、メニュー曲とのあいだは頭から鳴らす。
+ */
+export function nextBgmStart(previous: BgmPattern | null, next: BgmPattern, now: number, epoch: number) {
+  const family = (p: BgmPattern) => (p === 'menu' ? 'menu' : 'edm');
+  const sameFamily = previous !== null && family(previous) === family(next);
+  const newEpoch = sameFamily ? epoch : now;
+  return { epoch: newEpoch, offset: now - newEpoch };
+}
 
 function ensureBgmLoaded() {
   if (loadedBgm || loadingBgm || !context) return;
@@ -339,8 +360,9 @@ function applyBgm() {
     playing = null;
     return;
   }
-  if (!playing) bgmEpoch = now;
-  const voice = startBgmVoice(context, master, loadedBgm, wantedBgm, now, now - bgmEpoch);
+  const start = nextBgmStart(playing?.pattern ?? null, wantedBgm, now, bgmEpoch);
+  bgmEpoch = start.epoch;
+  const voice = startBgmVoice(context, master, loadedBgm, wantedBgm, now, start.offset);
   if (playing) stopBgmVoice(playing.voice, now);
   playing = { pattern: wantedBgm, voice };
 }

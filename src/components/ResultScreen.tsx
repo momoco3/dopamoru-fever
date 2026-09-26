@@ -21,6 +21,7 @@ export function ResultScreen(props: Props) {
     play('drumroll');
     const timer = window.setTimeout(() => {
       setRevealed(true);
+      setBgm('menu');
       const w = window.innerWidth;
       const h = window.innerHeight;
       if (props.kind === 'fever' || perfect) {
