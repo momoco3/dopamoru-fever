@@ -1,4 +1,6 @@
 .pad {
+  /* 余りがあっても数字キーは画面の一番下に（親指で押しやすい位置） */
+  margin-top: auto;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
@@ -8,8 +10,8 @@
 }
 
 .key {
-  min-height: 58px;
-  height: clamp(52px, 8.4vh, 72px);
+  min-height: 50px;
+  height: clamp(50px, 7dvh, 66px);
   font-family: var(--font-display);
   font-size: 1.9rem;
   background: var(--paper);
@@ -18,6 +20,24 @@
 
 .zero {
   grid-column: span 3;
+}
+
+/* 縦が短い画面では 5 × 2 の2段にする（1 2 3 4 5 / 6 7 8 9 0） */
+@media (max-height: 820px) {
+  .pad {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+  }
+  .key {
+    order: var(--order);
+    min-height: 50px;
+    height: clamp(50px, 8dvh, 62px);
+    font-size: 1.7rem;
+  }
+  .zero {
+    grid-column: auto;
+  }
 }
 
 .fever .key {
@@ -30,4 +50,12 @@
 
 .fever .key:nth-child(3n + 2) {
   background: linear-gradient(180deg, #fff, #dff7ff);
+}
+
+@media (max-height: 620px) {
+  .key {
+    min-height: 46px;
+    height: 46px;
+    font-size: 1.5rem;
+  }
 }

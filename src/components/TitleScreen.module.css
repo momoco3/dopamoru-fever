@@ -4,7 +4,7 @@
   align-items: center;
   gap: 18px;
   min-height: 100%;
-  padding: max(28px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  padding: max(28px, env(safe-area-inset-top)) 20px calc(max(24px, env(safe-area-inset-bottom)) + var(--browser-bottom));
   overflow-y: auto;
 }
 

@@ -18,6 +18,9 @@
   --radius: 18px;
   --push: 0 5px 0 var(--ink);
 
+  /* iPhone のブラウザで、画面下に浮かぶボタンバーに隠れないための余白（下で設定） */
+  --browser-bottom: 0px;
+
   --font-display: 'Dela Gothic One', 'Arial Black', system-ui, sans-serif;
   --font-body: system-ui, -apple-system, 'Hiragino Maru Gothic ProN', 'Hiragino Sans', 'Segoe UI', 'Noto Sans JP', Meiryo, sans-serif;
 
@@ -55,6 +58,15 @@ body {
 
 #root {
   height: 100%;
+}
+
+/* iPhone / iPad の Safari・アプリ内ブラウザ（ホーム画面から開いたときは除く） */
+@supports (-webkit-touch-callout: none) {
+  @media not all and (display-mode: standalone) {
+    :root {
+      --browser-bottom: 64px;
+    }
+  }
 }
 
 button {

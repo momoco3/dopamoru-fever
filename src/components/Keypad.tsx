@@ -1,4 +1,5 @@
 // 数字キー（大きめで押しやすく）。
+import type { CSSProperties } from 'react';
 import { play } from '../lib/sound';
 import styles from './Keypad.module.css';
 
@@ -27,6 +28,7 @@ export function Keypad({ onPress, pressedKey, fever }: Props) {
           key={digit}
           type="button"
           data-key={digit}
+          style={{ '--order': digit } as CSSProperties}
           className={`push-button ${styles.key} ${pressedKey === digit ? 'is-pressed' : ''}`}
           onPointerDown={(event) => {
             // タップの反応を速くするため、pointerdown で入力する
@@ -46,6 +48,7 @@ export function Keypad({ onPress, pressedKey, fever }: Props) {
       <button
         type="button"
         data-key={0}
+        style={{ '--order': 10 } as CSSProperties}
         className={`push-button ${styles.key} ${styles.zero} ${pressedKey === 0 ? 'is-pressed' : ''}`}
         onPointerDown={(event) => {
           event.preventDefault();
