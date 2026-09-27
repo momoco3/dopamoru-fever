@@ -38,6 +38,10 @@
   animation: rays-spin 14s linear infinite;
 }
 
+.raysSoft {
+  opacity: 0.3;
+}
+
 .raysOn {
   opacity: 0.55;
 }

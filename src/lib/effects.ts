@@ -48,7 +48,7 @@ export const fx = {
   flash: (color = '#fff') => emit({ type: 'flash', color }),
   shake: (strength = 1) => emit({ type: 'shake', strength }),
   cutIn: (text: string, sub: string) => emit({ type: 'cutIn', text, sub }),
-  /** 常に流れる背景演出の強さ（0〜5） */
+  /** 常に流れる背景演出の強さ（0〜5、-1 でなし） */
   ambient: (level: number) => emit({ type: 'ambient', level }),
 };
 

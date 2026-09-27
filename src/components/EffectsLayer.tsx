@@ -44,14 +44,14 @@ export function EffectsLayer({ reduceMotion, shakeTargetId }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const ambientRef = useRef(0);
+  const ambientRef = useRef(-1);
   const reduceRef = useRef(reduceMotion);
   const lastFlashRef = useRef(0);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [floats, setFloats] = useState<FloatText[]>([]);
   const [cutIn, setCutIn] = useState<CutIn | null>(null);
   const [flash, setFlash] = useState<{ id: number; color: string } | null>(null);
-  const [ambient, setAmbient] = useState(0);
+  const [ambient, setAmbient] = useState(-1);
 
   useEffect(() => {
     reduceRef.current = reduceMotion;
@@ -128,11 +128,12 @@ export function EffectsLayer({ reduceMotion, shakeTargetId }: Props) {
 
       // 背景演出のレベルに応じて、上からコインや星が降り続ける
       const level = ambientRef.current;
-      const ambientRate = reduceRef.current ? 0 : level >= 5 ? 26 : level >= 4 ? 12 : level >= 3 ? 5 : 0;
+      const ambientRate = reduceRef.current || level < 0 ? 0 : [1.5, 3, 6, 10, 16, 28][Math.min(5, level)];
       rainCarry += ambientRate * dt;
       while (rainCarry >= 1) {
         rainCarry -= 1;
-        const kinds: ParticleKind[] = level >= 5 ? ['coin', 'star', 'moru', 'heart', 'confetti'] : level >= 4 ? ['coin', 'star', 'confetti'] : ['coin', 'star'];
+        const kinds: ParticleKind[] =
+          level >= 5 ? ['coin', 'star', 'moru', 'heart', 'confetti'] : level >= 3 ? ['coin', 'star', 'confetti', 'moru'] : ['coin', 'star', 'confetti'];
         spawn(kinds[Math.floor(Math.random() * kinds.length)], Math.random() * width, -40, (Math.random() - 0.5) * 80, 120 + Math.random() * 200);
       }
       for (let i = rains.length - 1; i >= 0; i--) {
@@ -264,7 +265,7 @@ export function EffectsLayer({ reduceMotion, shakeTargetId }: Props) {
     <>
       {/* 背景の光線（コンテンツより後ろ） */}
       <div
-        className={`${styles.rays} ${ambient >= 3 ? styles.raysOn : ''} ${ambient >= 4 ? styles.raysRainbow : ''} ${ambient >= 5 ? styles.raysFever : ''}`}
+        className={`${styles.rays} ${ambient >= 0 ? styles.raysSoft : ''} ${ambient >= 2 ? styles.raysOn : ''} ${ambient >= 3 ? styles.raysRainbow : ''} ${ambient >= 5 ? styles.raysFever : ''}`}
         aria-hidden="true"
       />
       {/* カードや数字キーの後ろを流れるパーティクル */}

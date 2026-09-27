@@ -14,7 +14,8 @@ export type SoundName =
   | 'perfect'
   | 'result'
   | 'start'
-  | 'tick';
+  | 'tick'
+  | 'sixSeven';
 
 export type SoundOptions = { step?: number; level?: number };
 export type BgmPattern = 'menu' | 'game' | 'hot' | 'fever';
@@ -32,6 +33,8 @@ declare global {
 
 let context: AudioContext | null = null;
 let master: GainNode | null = null;
+/** BGM だけの音量つまみ（67 の曲を流すあいだ、いつもの BGM を小さくする） */
+let bgmBus: GainNode | null = null;
 let muted = false;
 
 /** 最初のタップのときに呼ぶ（ブラウザは操作前に音を鳴らせないため） */
@@ -41,6 +44,8 @@ export function unlockAudio() {
     if (!AudioContextClass) return;
     context = new AudioContextClass();
     master = createMaster(context, context.destination);
+    bgmBus = context.createGain();
+    bgmBus.connect(master);
   }
   if (context.state === 'suspended') void context.resume();
   ensureBgmLoaded();
@@ -161,7 +166,7 @@ export function renderSound(ctx: BaseAudioContext, dest: AudioNode, t: number, n
     case 'clear': {
       // 段階が上がるほど長く・速く・高くなる「ピロリロリン♪」
       const notes = [0, 4, 7, 12, 16, 19, 24, 28, 31];
-      const count = Math.min(notes.length, 4 + level);
+      const count = Math.min(notes.length, 5 + level);
       const stepTime = Math.max(0.035, 0.075 - level * 0.009);
       const base = C5 + Math.min(level, 4) * 2;
       for (let i = 0; i < count; i++) {
@@ -169,11 +174,12 @@ export function renderSound(ctx: BaseAudioContext, dest: AudioNode, t: number, n
         tone(ctx, dest, t + i * stepTime, { freq: note(base + notes[i]), type: 'square', duration: last ? 0.35 : 0.09, gain: 0.08 });
         tone(ctx, dest, t + i * stepTime, { freq: note(base + notes[i] + 12), type: 'triangle', duration: last ? 0.45 : 0.1, gain: 0.1 });
       }
-      if (level >= 2) {
-        const coins = Math.min(10, (level - 1) * 3);
+      {
+        // コインの「チャリン」は段階0から
+        const coins = Math.min(12, 3 + level * 2);
         for (let i = 0; i < coins; i++) renderSound(ctx, dest, t + 0.12 + i * 0.07, 'coin', {});
       }
-      if (level >= 3) noise(ctx, dest, t + count * stepTime, { duration: 0.6, gain: 0.12, freq: 6000 });
+      noise(ctx, dest, t + count * stepTime, { duration: 0.4 + Math.min(level, 4) * 0.1, gain: 0.12, freq: 6000 });
       break;
     }
 
@@ -240,6 +246,93 @@ export function renderSound(ctx: BaseAudioContext, dest: AudioNode, t: number, n
     case 'tick':
       tone(ctx, dest, t, { freq: 1600, type: 'square', duration: 0.03, gain: 0.05 });
       break;
+
+    case 'sixSeven':
+      renderSixSevenBgm(ctx, dest, t);
+      break;
+  }
+}
+
+// ---------- 67 の専用 BGM ----------
+// 答えが 67 の問題を解いたときだけ流れる、オリジナルのノリノリな曲（Web Audio で合成）。
+// 「シックス!」「セブン!」の2つの叩きつける音がくり返し出てくる。
+
+const SIX_SEVEN_BPM = 150;
+const SIX_SEVEN_BARS = 4;
+/** 67 の曲の長さ（秒） */
+export const SIX_SEVEN_SECONDS = (SIX_SEVEN_BARS * 4 * 60) / SIX_SEVEN_BPM + 0.6;
+
+function renderSixSevenBgm(ctx: BaseAudioContext, dest: AudioNode, t: number) {
+  const beat = 60 / SIX_SEVEN_BPM;
+  const bus = ctx.createGain();
+  bus.gain.value = 1.1;
+  bus.connect(dest);
+  // ベース（ラ → ファ → ソ → ミ の繰り返し）
+  const roots = [-12 - 12, -16 - 12, -14 - 12, -17 - 12];
+  for (let bar = 0; bar < SIX_SEVEN_BARS; bar++) {
+    const b0 = t + bar * 4 * beat;
+    const root = roots[bar % roots.length];
+    for (let i = 0; i < 4; i++) {
+      const bt = b0 + i * beat;
+      kick(ctx, bus, bt, 0.7);
+      noise(ctx, bus, bt + beat / 2, { duration: 0.05, gain: 0.07, freq: 9000 });
+      noise(ctx, bus, bt + beat / 4, { duration: 0.03, gain: 0.04, freq: 10000 });
+      noise(ctx, bus, bt + (beat * 3) / 4, { duration: 0.03, gain: 0.04, freq: 10000 });
+      if (i % 2 === 1) noise(ctx, bus, bt, { duration: 0.14, gain: 0.22, filter: 'bandpass', freq: 1500 });
+      tone(ctx, bus, bt + beat / 2, { freq: note(root), type: 'sawtooth', duration: beat * 0.45, gain: 0.12 });
+      tone(ctx, bus, bt + beat / 2, { freq: note(root + 12), type: 'square', duration: beat * 0.3, gain: 0.05 });
+    }
+    // 「シックス!」「セブン!」（6度 → 7度の和音で叩く）。2小節目と4小節目は音を上げて畳みかける
+    const lift = bar % 2 === 1 ? 5 : 0;
+    const stab = (at: number, semis: number[]) =>
+      semis.forEach((n) => {
+        tone(ctx, bus, at, { freq: note(n + lift), type: 'sawtooth', duration: beat * 0.7, gain: 0.07 });
+        tone(ctx, bus, at, { freq: note(n + lift + 12), type: 'square', duration: beat * 0.5, gain: 0.035 });
+      });
+    stab(b0, [C5 + 9 - 12, C5 + 12 - 12, C5 + 16 - 12]);
+    stab(b0 + beat * 1.5, [C5 + 11 - 12, C5 + 14 - 12, C5 + 17 - 12]);
+    noise(ctx, bus, b0, { duration: 0.25, gain: 0.12, filter: 'bandpass', freq: 3000 });
+    noise(ctx, bus, b0 + beat * 1.5, { duration: 0.25, gain: 0.12, filter: 'bandpass', freq: 3000 });
+    // ピロピロの上がっていくメロディ
+    [0, 4, 7, 9, 12, 9, 7, 11].forEach((n, i) =>
+      tone(ctx, bus, b0 + beat * 2 + i * (beat / 4), { freq: note(C5 + n + lift), type: 'square', duration: beat * 0.22, gain: 0.05 }),
+    );
+  }
+  // 最後に「ジャーン!」
+  const end = t + SIX_SEVEN_BARS * 4 * beat;
+  [C5 + 9 - 12, C5 + 12 - 12, C5 + 16 - 12, C5 + 21 - 12].forEach((n) =>
+    tone(ctx, bus, end - beat * 0.5, { freq: note(n), type: 'sawtooth', duration: 1.1, gain: 0.06 }),
+  );
+  noise(ctx, bus, end - beat * 0.5, { duration: 1, gain: 0.2, freq: 5000 });
+}
+
+/** 67 の曲を流す。いつもの BGM はそのあいだ小さくする */
+export function playSixSeven() {
+  play('sixSeven');
+  if (!context || !bgmBus || muted) return;
+  const now = context.currentTime;
+  const g = bgmBus.gain;
+  g.cancelScheduledValues(now);
+  g.setValueAtTime(g.value, now);
+  g.linearRampToValueAtTime(0.08, now + 0.15);
+  g.setValueAtTime(0.08, now + SIX_SEVEN_SECONDS - 0.6);
+  g.linearRampToValueAtTime(1, now + SIX_SEVEN_SECONDS);
+  speak('シックス、セブン！');
+  window.setTimeout(() => speak('シックスセブン！'), ((4 * 2 * 60) / SIX_SEVEN_BPM) * 1000);
+}
+
+/** 端末に入っている読み上げの声でしゃべらせる（声が無い端末では何もしない） */
+function speak(text: string) {
+  if (muted || typeof speechSynthesis === 'undefined') return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = 1.5;
+    u.pitch = 1.8;
+    u.volume = 1;
+    speechSynthesis.speak(u);
+  } catch {
+    // 読み上げが使えなくても曲は流れる
   }
 }
 
@@ -255,7 +348,13 @@ type BgmTrack = {
   leadIn?: number;
   /** 曲ごとの音量の補正（1 = そのまま） */
   volume?: number;
+  /** 再生スピード（2 = 2倍速。音も高くなる）。指定がなければ BGM_SPEED */
+  speed?: number;
 };
+
+/** BGM の再生スピード（娘さんの希望で 2倍速。1 に戻すと元どおり） */
+const BGM_SPEED = 2;
+const trackSpeed = (pattern: BgmPattern) => BGM_TRACKS[pattern].speed ?? BGM_SPEED;
 
 /** BGM の曲。差し替えるときは public/bgm/ のファイルと、ここの秒数（ループの長さ）を変える */
 export const BGM_TRACKS: Record<BgmPattern, BgmTrack> = {
@@ -304,12 +403,16 @@ export function startBgmVoice(ctx: BaseAudioContext, dest: AudioNode, loaded: Lo
   source.loop = true;
   source.loopStart = track.loopStart;
   source.loopEnd = track.loopEnd;
+  // offset は実際の経過時間なので、スピードをかけて曲の中の位置にする
+  const speed = trackSpeed(pattern);
+  source.playbackRate.value = speed;
+  const position = offset * speed;
   const level = BGM_VOLUME * (BGM_TRACKS[pattern].volume ?? 1);
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.0001, when);
   gain.gain.exponentialRampToValueAtTime(level, when + CROSSFADE_SECONDS);
   source.connect(gain).connect(dest);
-  source.start(when, track.loopStart + (((offset % length) + length) % length));
+  source.start(when, track.loopStart + (((position % length) + length) % length));
   return { source, gain, level };
 }
 
@@ -362,7 +465,7 @@ function applyBgm() {
   }
   const start = nextBgmStart(playing?.pattern ?? null, wantedBgm, now, bgmEpoch);
   bgmEpoch = start.epoch;
-  const voice = startBgmVoice(context, master, loadedBgm, wantedBgm, now, start.offset);
+  const voice = startBgmVoice(context, bgmBus ?? master, loadedBgm, wantedBgm, now, start.offset);
   if (playing) stopBgmVoice(playing.voice, now);
   playing = { pattern: wantedBgm, voice };
 }

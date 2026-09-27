@@ -31,9 +31,9 @@ export function clearPoints(combo: number, fever: boolean, secondsTaken: number)
  */
 export function getLevel(combo: number, fever: boolean): number {
   if (fever) return 5;
-  if (combo >= 8) return 4;
-  if (combo >= 5) return 3;
-  if (combo >= 3) return 2;
+  if (combo >= 6) return 4;
+  if (combo >= 4) return 3;
+  if (combo >= 2) return 2;
   if (combo >= 1) return 1;
   return 0;
 }

@@ -2,9 +2,9 @@
 // 一の位から1桁ずつ入力。正解するとドパと演出、連続正解（コンボ）で演出がどんどん派手になります。
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { centerOf, fx, type ParticleKind } from '../lib/effects';
-import { createProblem, PLACE_NAMES } from '../lib/problems';
+import { createProblem, PLACE_NAMES, SIX_SEVEN } from '../lib/problems';
 import { clearPoints, digitPoints, formatDopa, formatTime, getLevel, getMultiplier, TARGET_SECONDS_PER_QUESTION } from '../lib/score';
-import { play, setBgm } from '../lib/sound';
+import { play, playSixSeven, setBgm } from '../lib/sound';
 import type { Expression } from '../lib/dopamoruArt';
 import type { FeverResult, GameConfig, GameResult, Problem } from '../types';
 import { DopaCounter } from './DopaCounter';
@@ -118,11 +118,16 @@ export function GameScreen(props: Props) {
       play('feverStart');
       fx.rain(['coin', 'star', 'moru', 'confetti'], 120, 2000);
     } else {
+      // 最初からドパを出す（おとなしいと見てもらえないので）
       play('start');
-      fx.banner('スタート!', 'pop');
+      play('levelUp');
+      fx.banner('スタート!!', 'gold', 'ドパを集めろ!!');
+      fx.burst({ x: window.innerWidth / 2, y: window.innerHeight * 0.4, count: 70, kinds: ['star', 'confetti', 'coin', 'spark'], power: 1.2 });
+      fx.rain(['star', 'confetti', 'coin'], 40, 1400);
+      fx.flash('#ffffff');
     }
     return () => {
-      fx.ambient(0);
+      fx.ambient(-1);
     };
   }, [fever]);
 
@@ -165,7 +170,7 @@ export function GameScreen(props: Props) {
   const nextProblem = useCallback(() => {
     const s = stateRef.current;
     if (s.finished) return;
-    const problem = createProblem(config.operation);
+    const problem = createProblem(config.operation, Math.random, s.problem);
     s.problem = problem;
     s.questionNumber += 1;
     s.place = 0;
@@ -221,8 +226,9 @@ export function GameScreen(props: Props) {
       s.lastGain = gained;
       play('digit', { step: s.digitStreak });
       const pos = centerOf(box);
-      const kinds: ParticleKind[] = lv >= 3 ? ['star', 'spark', 'coin'] : ['star', 'spark'];
-      fx.burst({ x: pos.x, y: pos.y, count: 10 + lv * 8, kinds, power: 0.7 + lv * 0.12 });
+      const kinds: ParticleKind[] = lv >= 2 ? ['star', 'spark', 'coin', 'confetti'] : ['star', 'spark', 'coin'];
+      fx.burst({ x: pos.x, y: pos.y, count: 22 + lv * 10, kinds, power: 0.9 + lv * 0.12 });
+      if (lv >= 1) fx.shake(0.25 + lv * 0.1);
       fx.floatText(pos.x, pos.y - 30, `+${formatDopa(gained)}`);
       s.place += 1;
 
@@ -245,11 +251,13 @@ export function GameScreen(props: Props) {
       s.busy = true;
       rerender();
 
+      const sixSeven = s.problem.answer === SIX_SEVEN;
       celebrate({ level: after, points, combo: s.combo, fever, card: cardRef.current, setMascot, setBubble });
-      if (!fever && after > before && after >= 2) announceLevelUp(after);
+      if (sixSeven) celebrateSixSeven(cardRef.current, setBubble);
+      else if (!fever && after > before && after >= 2) announceLevelUp(after);
 
       const done = !fever && s.cleared >= config.count;
-      window.setTimeout(() => (done ? finish() : nextProblem()), fever ? 380 : done ? 300 : 700);
+      window.setTimeout(() => (done ? finish() : nextProblem()), sixSeven ? 1300 : fever ? 380 : done ? 300 : 700);
     },
     [config.count, fever, finish, nextProblem, rerender],
   );
@@ -424,23 +432,56 @@ type CelebrateOptions = {
 
 function celebrate({ level: lv, points, combo, fever, card: cardElement, setMascot, setBubble }: CelebrateOptions) {
   const card = centerOf(cardElement);
+  // 段階0（コンボなし）でもしっかり派手に。段階が上がるほどさらに増える
   const kinds: ParticleKind[] =
-    lv >= 5 ? ['coin', 'star', 'heart', 'moru', 'confetti', 'spark'] : lv >= 3 ? ['coin', 'star', 'confetti', 'spark'] : lv >= 1 ? ['star', 'confetti'] : ['star'];
-  fx.burst({ x: card.x, y: card.y, count: 24 + lv * 26, kinds, power: 1 + lv * 0.15 });
-  if (lv >= 2) fx.burst({ x: card.x, y: window.innerHeight, count: 20 + lv * 12, kinds: ['coin', 'star', 'confetti'], power: 1.3, fountain: true });
-  if (lv >= 3) fx.rain(lv >= 5 ? ['coin', 'moru', 'star'] : ['coin', 'star'], 20 + lv * 10, 1200);
-  if (lv >= 2) fx.flash(lv >= 4 ? '#ffd93b' : '#ffffff');
-  if (lv >= 2) fx.shake(0.5 + lv * 0.25);
+    lv >= 5
+      ? ['coin', 'star', 'heart', 'moru', 'confetti', 'spark']
+      : lv >= 3
+        ? ['coin', 'star', 'confetti', 'spark', 'heart']
+        : ['coin', 'star', 'confetti', 'spark'];
+  fx.burst({ x: card.x, y: card.y, count: 60 + lv * 30, kinds, power: 1.15 + lv * 0.15 });
+  fx.burst({ x: card.x, y: window.innerHeight, count: 30 + lv * 14, kinds: ['coin', 'star', 'confetti'], power: 1.3 + lv * 0.05, fountain: true });
+  if (lv >= 2) {
+    // 左右の端からもコインの噴水
+    fx.burst({ x: 0, y: window.innerHeight, count: 12 + lv * 6, kinds: ['coin', 'star'], power: 1.2, fountain: true });
+    fx.burst({ x: window.innerWidth, y: window.innerHeight, count: 12 + lv * 6, kinds: ['coin', 'star'], power: 1.2, fountain: true });
+  }
+  fx.rain(lv >= 5 ? ['coin', 'moru', 'star'] : lv >= 3 ? ['coin', 'star', 'moru'] : ['coin', 'star', 'confetti'], 24 + lv * 12, 1200);
+  // 画面全体のフラッシュ（EffectsLayer が 0.5 秒に1回までに抑える）
+  fx.flash(lv >= 4 ? '#ffd93b' : lv >= 2 ? '#ffffff' : '#fff6c8');
+  fx.shake(0.6 + lv * 0.25);
   const words = CLEAR_WORDS[lv];
-  fx.banner(words[combo % words.length], lv >= 4 ? 'rainbow' : lv >= 2 ? 'gold' : 'pop', combo >= 2 ? `${combo}コンボ` : undefined);
+  fx.banner(words[combo % words.length], lv >= 3 ? 'rainbow' : 'gold', combo >= 2 ? `${combo}コンボ` : undefined);
   fx.floatText(card.x, card.y + 40, `+${formatDopa(points)}ドパ`, true);
   play('clear', { level: lv });
   setMascot((m) => ({
     expression: lv >= 5 ? 'fever' : lv >= 3 ? 'wow' : 'happy',
-    motion: lv >= 4 ? 'dance' : lv >= 2 ? 'spin' : 'jump',
+    motion: lv >= 3 ? 'dance' : lv >= 1 ? 'spin' : 'jump',
     key: m.key + 1,
   }));
   setBubble(combo >= 2 ? `${combo}コンボ！ ドパ×${formatDopa(getMultiplier(combo, fever))}` : 'その調子モル！');
+}
+
+/** 答えが 67 のときの特別演出（専用 BGM つき） */
+function celebrateSixSeven(cardElement: HTMLElement | null, setBubble: (text: string) => void) {
+  const card = centerOf(cardElement);
+  playSixSeven();
+  setBubble('シックスセブン!! 67だモル!!');
+  window.setTimeout(() => {
+    fx.cutIn('シックスセブン!!', '67 がでた!! ドパ大放出!!');
+    fx.rain(['coin', 'moru', 'star', 'heart', 'confetti'], 140, 3500);
+    fx.burst({ x: card.x, y: card.y, count: 160, kinds: ['coin', 'star', 'heart', 'moru', 'spark'], power: 1.8 });
+  }, 250);
+  // 「6」と「7」の数字が左右からドーン
+  window.setTimeout(() => {
+    fx.floatText(window.innerWidth * 0.3, window.innerHeight * 0.35, '6', true);
+    fx.shake(1.4);
+  }, 700);
+  window.setTimeout(() => {
+    fx.floatText(window.innerWidth * 0.7, window.innerHeight * 0.35, '7', true);
+    fx.flash('#ff5fa2');
+    fx.shake(1.6);
+  }, 1100);
 }
 
 /** 段階が上がったときの「チャンス!!」演出 */
