@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "A super flashy arithmetic drill for kids. Column addition & subtraction with pachinko-style rewards.",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",

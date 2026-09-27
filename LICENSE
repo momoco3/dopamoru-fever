@@ -1,21 +1,22 @@
-MIT License
+Copyright (c) 2026 momoco3. All rights reserved.
 
-Copyright (c) 2026 Dopamoru Fever contributors
+This repository (source code, the "Dopamoru" character and artwork, sound
+effects, the 67 jingle, and all other original content) is published for
+viewing only. No permission is granted to copy, modify, distribute, publish,
+sell, or otherwise use any part of it without prior written permission from
+the copyright holder.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Third-party components keep their own licenses:
+- Libraries bundled in the app (react, react-dom, scheduler: MIT;
+  @fontsource/dela-gothic-one: SIL Open Font License 1.1)
+- Background music in public/bgm/ (CC0 1.0, see README)
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+著作権 (c) 2026 momoco3. 無断での利用を禁止します。
+
+このリポジトリ（プログラム、キャラクター「ドパモル」とその絵、効果音、67 の曲などオリジナルの内容すべて）は、
+見ることだけを目的に公開しています。著作権者の許可なく、コピー・改変・再配布・公開・販売など、
+一部でも利用することはできません。
+
+ほかの人が作ったライブラリ（React など）とフォント、BGM（CC0）は、それぞれ元のライセンスのままです。
